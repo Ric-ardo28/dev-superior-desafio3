@@ -3,28 +3,30 @@ package br.com.ricardo.crudcliente.service;
 import br.com.ricardo.crudcliente.dto.ClientDTO;
 import br.com.ricardo.crudcliente.entities.Client;
 import br.com.ricardo.crudcliente.repository.ClientRepository;
+import br.com.ricardo.crudcliente.service.exceptions.DatabaseException;
+import br.com.ricardo.crudcliente.service.exceptions.ResourceNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.util.Optional;
 
 @Service
 public class ClientService {
 
-	ClientRepository clientRepository;
+	private final ClientRepository clientRepository;
 
 	public ClientService(ClientRepository clientRepository) {
 		this.clientRepository = clientRepository;
 	}
 
+
 	@Transactional(readOnly = true)
-	public ClientDTO findById(Long id){
-		Client client = clientRepository.findById(id).orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+	public ClientDTO findById(Long id) {
+		Client client = clientRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado"));
 		return new ClientDTO(client);
 
 	}
@@ -34,46 +36,49 @@ public class ClientService {
 		Page<Client> result = clientRepository.findAll(pageable);
 		return result.map(ClientDTO::new);
 	}
+
 	@Transactional
 	public ClientDTO insert(ClientDTO dto) {
 		Client entity = new Client();
-		entity.setName(dto.getName());
-		entity.setCpf(dto.getCpf());
-		entity.setIncome(dto.getIncome());
-		entity.setBirthDate(LocalDate.parse(dto.getBirthDate()));
-		entity.setChildren(dto.getChildren());
+		copyDtoToEntity(dto, entity);
 		entity = clientRepository.save(entity);
 		return new ClientDTO(entity);
 	}
+
 	@Transactional
 	public ClientDTO update(Long id, ClientDTO dto) {
 		try {
 			Client entity = clientRepository.getReferenceById(id);
-			entity.setName(dto.getName());
-			entity.setCpf(dto.getCpf());
-			entity.setIncome(dto.getIncome());
-			entity.setBirthDate(LocalDate.parse(dto.getBirthDate()));
-			entity.setChildren(dto.getChildren());
+			copyDtoToEntity(dto, entity);
 			entity = clientRepository.save(entity);
-
 			return new ClientDTO(entity);
-		}catch (EntityNotFoundException e){
-			throw new RuntimeException("Cliente não encontrado");
+
+		} catch (EntityNotFoundException e) {
+			throw new ResourceNotFoundException("Cliente não encontrado");
 		}
 	}
+
 	@Transactional
 	public void delete(Long id) {
 		if (!clientRepository.existsById(id)) {
-			throw new RuntimeException("Cliente não encontrado");
+			throw new ResourceNotFoundException("Cliente não encontrado");
 		}
 		try {
 			clientRepository.deleteById(id);
 		} catch (DataIntegrityViolationException e) {
-			throw new RuntimeException("Erro ao deletar cliente");
+			throw new DatabaseException("Erro ao deletar cliente");
 		}
 	}
 
+	public void copyDtoToEntity(ClientDTO dto, Client entity) {
+		entity.setName(dto.getName());
+		entity.setCpf(dto.getCpf());
+		entity.setIncome(dto.getIncome());
+		entity.setBirthDate(dto.getBirthDate());
+		entity.setChildren(dto.getChildren());
 
+
+	}
 
 
 }

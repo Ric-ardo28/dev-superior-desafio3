@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -19,8 +21,8 @@ public class ClientDTO {
 	private String name;
 	private String cpf;
 	private Double income;
-	@PastOrPresent
-	private String birthDate;
+	@PastOrPresent(message = "A data de nascimento não pode ser futura")
+	private LocalDate birthDate;
 	private Integer children;
 
 	public ClientDTO(Client entity) {
@@ -28,7 +30,7 @@ public class ClientDTO {
 		this.name = entity.getName();
 		this.cpf = entity.getCpf();
 		this.income = entity.getIncome();
-		this.birthDate = entity.getBirthDate().toString(); // Convert LocalDate to String
+		this.birthDate = entity.getBirthDate();
 		this.children = entity.getChildren();
 	}
 }
